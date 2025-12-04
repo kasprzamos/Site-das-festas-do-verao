@@ -632,612 +632,672 @@
         </footer>
     </div>
 
-    <script>
-        // ⭐⭐⭐ SUAS CREDENCIAIS DO SUPABASE ⭐⭐⭐
-        const SUPABASE_URL = 'https://betdkihrfsrzzcvojqce.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldGRraWhyZnNyenpjdm9qcWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3ODcxMjcsImV4cCI6MjA4MDM2MzEyN30.g_AV3sZN3zxW1RIug81X-7xJISSRoC3Dmv9zfNl71cY'; // Cole sua chave anon public aqui
+<script>
+    // ⭐⭐⭐ SUAS CREDENCIAIS DO SUPABASE ⭐⭐⭐
+    const SUPABASE_URL = 'https://betdkihrfsrzzcvojqce.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldGRraWhyZnNyenZjdm9qcWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3ODcxMjcsImV4cCI6MjA4MDM2MzEyN30.g_AV3sZN3zxW1RIug81X-7xJISSRoC3Dmv9zfNl71cY';
+    
+    // Inicializar Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+        }
+    });
+    
+    // Estado da aplicação
+    let currentUser = null;
+    let parties = [];
+    let onlineUsers = new Map();
+    let userColorsCache = new Map(); // Cache para armazenar cores dos usuários
+    
+    // Cores para avatares
+    const avatarColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa'];
+    
+    // DOM elements
+    const loginModal = document.getElementById('loginModal');
+    const userStatus = document.getElementById('userStatus');
+    const userNameInput = document.getElementById('userName');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userAvatar = document.getElementById('userAvatar');
+    const displayName = document.getElementById('displayName');
+    const partyForm = document.getElementById('partyForm');
+    const addPartyBtn = document.getElementById('add-party');
+    const partiesList = document.getElementById('partiesList');
+    const totalPartiesEl = document.getElementById('totalParties');
+    const totalConfirmationsEl = document.getElementById('totalConfirmations');
+    const friendsList = document.getElementById('friendsList');
+    
+    // Inicializar aplicação
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Site iniciando...');
         
-        // Inicializar Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-                detectSessionInUrl: false
-            }
+        // Configurar data mínima como hoje
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('party-date').setAttribute('min', today);
+        document.getElementById('party-date').value = today;
+        
+        // Carregar festas IMEDIATAMENTE (sem precisar de login)
+        loadPartiesPublic();
+        
+        // Verificar se já está logado
+        checkExistingUser();
+        
+        // Event listeners
+        loginBtn.addEventListener('click', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        addPartyBtn.addEventListener('click', handleAddParty);
+        
+        // Permitir login com Enter
+        userNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleLogin();
         });
         
-        // Estado da aplicação
-        let currentUser = null;
-        let parties = [];
-        let onlineUsers = new Map();
+        // Observar mudanças nas festas em tempo real
+        setupRealtimeSubscription();
         
-        // Cores para avatares
-        const avatarColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa'];
-        
-        // DOM elements
-        const loginModal = document.getElementById('loginModal');
-        const userStatus = document.getElementById('userStatus');
-        const userNameInput = document.getElementById('userName');
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userAvatar = document.getElementById('userAvatar');
-        const displayName = document.getElementById('displayName');
-        const partyForm = document.getElementById('partyForm');
-        const addPartyBtn = document.getElementById('add-party');
-        const partiesList = document.getElementById('partiesList');
-        const totalPartiesEl = document.getElementById('totalParties');
-        const totalConfirmationsEl = document.getElementById('totalConfirmations');
-        const friendsList = document.getElementById('friendsList');
-        
-        // Inicializar aplicação
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Site iniciando...');
-            
-            // Configurar data mínima como hoje
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('party-date').setAttribute('min', today);
-            document.getElementById('party-date').value = today;
-            
-            // Carregar festas IMEDIATAMENTE (sem precisar de login)
-            loadPartiesPublic();
-            
-            // Verificar se já está logado
-            checkExistingUser();
-            
-            // Event listeners
-            loginBtn.addEventListener('click', handleLogin);
-            logoutBtn.addEventListener('click', handleLogout);
-            addPartyBtn.addEventListener('click', handleAddParty);
-            
-            // Permitir login com Enter
-            userNameInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') handleLogin();
-            });
-            
-            // Observar mudanças nas festas em tempo real
-            setupRealtimeSubscription();
-            
-            // Manter usuário online
-            if (currentUser) {
-                setInterval(updateUserPresence, 30000);
-            }
-        });
-        
-        // Carregar festas PUBLICAMENTE (antes do login)
-        async function loadPartiesPublic() {
-            try {
-                console.log('Carregando festas públicas...');
-                const { data, error } = await supabase
-                    .from('parties')
-                    .select('*')
-                    .order('date', { ascending: true });
-                
-                if (error) {
-                    console.error('Erro ao carregar festas:', error);
-                    return;
-                }
-                
-                parties = data || [];
-                updatePartiesDisplay();
-            } catch (error) {
-                console.error('Erro:', error);
-            }
-        }
-        
-        // Verificar usuário existente
-        function checkExistingUser() {
-            const savedUser = localStorage.getItem('partyUser');
-            if (savedUser) {
-                try {
-                    const userData = JSON.parse(savedUser);
-                    currentUser = userData;
-                    updateUIAfterLogin();
-                    updateUserPresence();
-                    setupUserRealtime();
-                } catch (e) {
-                    console.error('Erro ao carregar usuário:', e);
-                    localStorage.removeItem('partyUser');
-                    loginModal.classList.add('active');
-                }
-            } else {
-                loginModal.classList.add('active');
-                userStatus.style.display = 'none';
-                partyForm.style.display = 'block'; // Mostrar formulário mesmo sem login
-            }
-        }
-        
-        // Lidar com login
-        async function handleLogin() {
-            const userName = userNameInput.value.trim();
-            
-            if (!userName) {
-                alert('Por favor, digite seu nome!');
-                return;
-            }
-            
-            if (userName.length < 2) {
-                alert('O nome deve ter pelo menos 2 caracteres!');
-                return;
-            }
-            
-            // Gerar ID único para o usuário
-            const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            const userColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
-            
-            // Criar objeto de usuário
-            currentUser = {
-                id: userId,
-                name: userName,
-                color: userColor,
-                lastSeen: new Date().toISOString()
-            };
-            
-            // Salvar no localStorage
-            localStorage.setItem('partyUser', JSON.stringify(currentUser));
-            
-            // Atualizar UI
-            updateUIAfterLogin();
-            
-            // Registrar usuário online no Supabase
-            await updateUserPresence();
-            
-            // Configurar realtime para usuário
-            setupUserRealtime();
-            
-            // Fechar modal
-            loginModal.classList.remove('active');
-            
-            // Atualizar lista de festas com informações do usuário
-            updatePartiesDisplay();
-        }
-        
-        // Atualizar UI após login
-        function updateUIAfterLogin() {
-            if (!currentUser) return;
-            
-            userStatus.style.display = 'flex';
-            
-            // Atualizar avatar e nome
-            const firstChar = currentUser.name.charAt(0);
-            userAvatar.textContent = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
-            userAvatar.style.backgroundColor = currentUser.color;
-            displayName.textContent = currentUser.name;
-            
-            // Atualizar lista de amigos
-            loadOnlineUsers();
-        }
-        
-        // Configurar realtime para usuário
-        function setupUserRealtime() {
-            if (!currentUser) return;
-            
-            // Iniciar intervalo para manter presença
+        // Manter usuário online
+        if (currentUser) {
             setInterval(updateUserPresence, 30000);
         }
-        
-        // Lidar com logout
-        function handleLogout() {
-            if (confirm('Tem certeza que deseja sair?')) {
-                // Remover do localStorage
+    });
+    
+    // Carregar festas PUBLICAMENTE (antes do login)
+    async function loadPartiesPublic() {
+        try {
+            console.log('Carregando festas públicas...');
+            const { data, error } = await supabase
+                .from('parties')
+                .select('*')
+                .order('date', { ascending: true });
+            
+            if (error) {
+                console.error('Erro ao carregar festas:', error);
+                return;
+            }
+            
+            parties = data || [];
+            updatePartiesDisplay();
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    }
+    
+    // Verificar usuário existente
+    function checkExistingUser() {
+        const savedUser = localStorage.getItem('partyUser');
+        if (savedUser) {
+            try {
+                const userData = JSON.parse(savedUser);
+                currentUser = userData;
+                updateUIAfterLogin();
+                updateUserPresence();
+                setupUserRealtime();
+            } catch (e) {
+                console.error('Erro ao carregar usuário:', e);
                 localStorage.removeItem('partyUser');
-                
-                // Remover presença online
-                removeUserPresence();
-                
-                // Resetar estado
-                currentUser = null;
-                onlineUsers.clear();
-                
-                // Atualizar UI
                 loginModal.classList.add('active');
-                userStatus.style.display = 'none';
-                partiesList.innerHTML = '';
-                friendsList.innerHTML = '<p style="color: #86868b; font-style: italic;">Nenhum amigo online no momento</p>';
-                
-                // Recarregar festas (versão pública)
-                loadPartiesPublic();
             }
+        } else {
+            loginModal.classList.add('active');
+            userStatus.style.display = 'none';
+            partyForm.style.display = 'block'; // Mostrar formulário mesmo sem login
+        }
+    }
+    
+    // Lidar com login
+    async function handleLogin() {
+        const userName = userNameInput.value.trim();
+        
+        if (!userName) {
+            alert('Por favor, digite seu nome!');
+            return;
         }
         
-        // Atualizar presença do usuário
-        async function updateUserPresence() {
-            if (!currentUser) return;
-            
-            currentUser.lastSeen = new Date().toISOString();
-            
-            try {
-                // Usar uma tabela simples para presença online
-                await supabase
-                    .from('online_users')
-                    .upsert({
-                        user_id: currentUser.id,
-                        user_name: currentUser.name,
-                        user_color: currentUser.color,
-                        last_seen: currentUser.lastSeen
-                    }, { onConflict: 'user_id' });
-                
-                // Atualizar lista de amigos online
-                await loadOnlineUsers();
-            } catch (error) {
-                console.error('Erro ao atualizar presença:', error);
-            }
+        if (userName.length < 2) {
+            alert('O nome deve ter pelo menos 2 caracteres!');
+            return;
         }
         
-        // Remover presença do usuário
-        async function removeUserPresence() {
-            if (!currentUser) return;
-            
-            try {
-                await supabase
-                    .from('online_users')
-                    .delete()
-                    .eq('user_id', currentUser.id);
-            } catch (error) {
-                console.error('Erro ao remover presença:', error);
-            }
-        }
+        // Gerar ID único para o usuário
+        const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const userColor = avatarColors[Math.floor(Math.random() * avatarColors.length)];
         
-        // Carregar usuários online
-        async function loadOnlineUsers() {
-            if (!currentUser) return;
-            
-            try {
-                // Buscar usuários ativos nos últimos 2 minutos
-                const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-                
-                const { data, error } = await supabase
-                    .from('online_users')
-                    .select('*')
-                    .gt('last_seen', twoMinutesAgo);
-                
-                if (error) throw error;
-                
-                // Atualizar mapa de usuários online
-                onlineUsers.clear();
-                if (data) {
-                    data.forEach(user => {
-                        if (user.user_id !== currentUser.id) {
-                            onlineUsers.set(user.user_id, user);
-                        }
-                    });
-                }
-                
-                updateFriendsList();
-            } catch (error) {
-                console.error('Erro ao carregar usuários online:', error);
-            }
-        }
+        // Criar objeto de usuário
+        currentUser = {
+            id: userId,
+            name: userName,
+            color: userColor,
+            lastSeen: new Date().toISOString()
+        };
+        
+        // Salvar no localStorage
+        localStorage.setItem('partyUser', JSON.stringify(currentUser));
+        
+        // Atualizar UI
+        updateUIAfterLogin();
+        
+        // Registrar usuário online no Supabase
+        await updateUserPresence();
+        
+        // Configurar realtime para usuário
+        setupUserRealtime();
+        
+        // Fechar modal
+        loginModal.classList.remove('active');
+        
+        // Atualizar lista de festas com informações do usuário
+        updatePartiesDisplay();
+    }
+    
+    // Atualizar UI após login
+    function updateUIAfterLogin() {
+        if (!currentUser) return;
+        
+        userStatus.style.display = 'flex';
+        
+        // Atualizar avatar e nome
+        const firstChar = currentUser.name.charAt(0);
+        userAvatar.textContent = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
+        userAvatar.style.backgroundColor = currentUser.color;
+        displayName.textContent = currentUser.name;
         
         // Atualizar lista de amigos
-        function updateFriendsList() {
-            if (!currentUser || onlineUsers.size === 0) {
-                friendsList.innerHTML = '<p style="color: #86868b; font-style: italic;">Nenhum amigo online no momento</p>';
-                return;
+        loadOnlineUsers();
+    }
+    
+    // Configurar realtime para usuário
+    function setupUserRealtime() {
+        if (!currentUser) return;
+        
+        // Iniciar intervalo para manter presença
+        setInterval(updateUserPresence, 30000);
+    }
+    
+    // Lidar com logout
+    function handleLogout() {
+        if (confirm('Tem certeza que deseja sair?')) {
+            // Remover do localStorage
+            localStorage.removeItem('partyUser');
+            
+            // Remover presença online
+            removeUserPresence();
+            
+            // Resetar estado
+            currentUser = null;
+            onlineUsers.clear();
+            userColorsCache.clear();
+            
+            // Atualizar UI
+            loginModal.classList.add('active');
+            userStatus.style.display = 'none';
+            partiesList.innerHTML = '';
+            friendsList.innerHTML = '<p style="color: #86868b; font-style: italic;">Nenhum amigo online no momento</p>';
+            
+            // Recarregar festas (versão pública)
+            loadPartiesPublic();
+        }
+    }
+    
+    // Atualizar presença do usuário
+    async function updateUserPresence() {
+        if (!currentUser) return;
+        
+        currentUser.lastSeen = new Date().toISOString();
+        
+        try {
+            // Usar uma tabela simples para presença online
+            await supabase
+                .from('online_users')
+                .upsert({
+                    user_id: currentUser.id,
+                    user_name: currentUser.name,
+                    user_color: currentUser.color,
+                    last_seen: currentUser.lastSeen
+                }, { onConflict: 'user_id' });
+            
+            // Atualizar lista de amigos online
+            await loadOnlineUsers();
+        } catch (error) {
+            console.error('Erro ao atualizar presença:', error);
+        }
+    }
+    
+    // Remover presença do usuário
+    async function removeUserPresence() {
+        if (!currentUser) return;
+        
+        try {
+            await supabase
+                .from('online_users')
+                .delete()
+                .eq('user_id', currentUser.id);
+        } catch (error) {
+            console.error('Erro ao remover presença:', error);
+        }
+    }
+    
+    // Carregar usuários online
+    async function loadOnlineUsers() {
+        if (!currentUser) return;
+        
+        try {
+            // Buscar usuários ativos nos últimos 2 minutos
+            const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+            
+            const { data, error } = await supabase
+                .from('online_users')
+                .select('*')
+                .gt('last_seen', twoMinutesAgo);
+            
+            if (error) throw error;
+            
+            // Atualizar mapa de usuários online
+            onlineUsers.clear();
+            userColorsCache.clear(); // Limpar cache
+            
+            if (data) {
+                data.forEach(user => {
+                    if (user.user_id !== currentUser.id) {
+                        onlineUsers.set(user.user_id, user);
+                        // Armazenar cor do usuário no cache
+                        userColorsCache.set(user.user_id, user.user_color || '#007aff');
+                    }
+                });
             }
             
-            let friendsHTML = '';
-            let count = 0;
-            
-            onlineUsers.forEach(user => {
-                if (count < 10) { // Limitar a 10 amigos na lista
-                    const firstChar = user.user_name.charAt(0);
-                    const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
-                    
-                    friendsHTML += `
-                        <div class="confirmed-person" style="margin-bottom: 8px;">
-                            <div class="confirmed-avatar" style="background-color: ${user.user_color || '#007aff'}">
-                                ${avatarChar}
-                            </div>
-                            <span>${user.user_name}</span>
+            updateFriendsList();
+            updatePartiesDisplay(); // Atualizar festas para mostrar cores corretas
+        } catch (error) {
+            console.error('Erro ao carregar usuários online:', error);
+        }
+    }
+    
+    // Atualizar lista de amigos
+    function updateFriendsList() {
+        if (!currentUser || onlineUsers.size === 0) {
+            friendsList.innerHTML = '<p style="color: #86868b; font-style: italic;">Nenhum amigo online no momento</p>';
+            return;
+        }
+        
+        let friendsHTML = '';
+        let count = 0;
+        
+        onlineUsers.forEach(user => {
+            if (count < 10) { // Limitar a 10 amigos na lista
+                const firstChar = user.user_name.charAt(0);
+                const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
+                
+                friendsHTML += `
+                    <div class="confirmed-person" style="margin-bottom: 8px;">
+                        <div class="confirmed-avatar" style="background-color: ${user.user_color || '#007aff'}">
+                            ${avatarChar}
                         </div>
-                    `;
-                    count++;
-                }
-            });
-            
-            friendsList.innerHTML = friendsHTML;
-        }
-        
-        // Configurar inscrição em tempo real
-        function setupRealtimeSubscription() {
-            // Ouvir mudanças nas festas
-            supabase
-                .channel('public:parties')
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'parties' },
-                    () => {
-                        console.log('Mudança detectada nas festas!');
-                        loadPartiesPublic();
-                    }
-                )
-                .subscribe();
-            
-            // Ouvir mudanças em usuários online
-            supabase
-                .channel('public:online_users')
-                .on('postgres_changes',
-                    { event: '*', schema: 'public', table: 'online_users' },
-                    () => {
-                        if (currentUser) {
-                            loadOnlineUsers();
-                        }
-                    }
-                )
-                .subscribe();
-        }
-        
-        // Atualizar display das festas
-        function updatePartiesDisplay() {
-            let totalConfirmations = 0;
-            
-            partiesList.innerHTML = '';
-            
-            if (!parties || parties.length === 0) {
-                partiesList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-umbrella-beach"></i>
-                        <p>Nenhuma festa criada ainda</p>
-                        ${!currentUser ? '<p style="margin-top: 10px; font-size: 14px;">Entre com seu nome para criar uma festa!</p>' : ''}
+                        <span>${user.user_name}</span>
                     </div>
                 `;
-                updateCounters(0, 0);
-                return;
+                count++;
             }
-            
-            parties.forEach(party => {
-                // Contar confirmações
-                if (party.confirmed_users) {
-                    totalConfirmations += Object.keys(party.confirmed_users).length;
+        });
+        
+        friendsList.innerHTML = friendsHTML;
+    }
+    
+    // Configurar inscrição em tempo real
+    function setupRealtimeSubscription() {
+        // Ouvir mudanças nas festas
+        supabase
+            .channel('public:parties')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'parties' },
+                () => {
+                    console.log('Mudança detectada nas festas!');
+                    loadPartiesPublic();
                 }
-                
-                // Criar card da festa
-                createPartyCard(party);
-            });
-            
-            updateCounters(parties.length, totalConfirmations);
+            )
+            .subscribe();
+        
+        // Ouvir mudanças em usuários online
+        supabase
+            .channel('public:online_users')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'online_users' },
+                () => {
+                    if (currentUser) {
+                        loadOnlineUsers();
+                    }
+                }
+            )
+            .subscribe();
+    }
+    
+    // Atualizar display das festas
+    function updatePartiesDisplay() {
+        let totalConfirmations = 0;
+        
+        partiesList.innerHTML = '';
+        
+        if (!parties || parties.length === 0) {
+            partiesList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-umbrella-beach"></i>
+                    <p>Nenhuma festa criada ainda</p>
+                    ${!currentUser ? '<p style="margin-top: 10px; font-size: 14px;">Entre com seu nome para criar uma festa!</p>' : ''}
+                </div>
+            `;
+            updateCounters(0, 0);
+            return;
         }
         
-        // Criar card de festa
-        function createPartyCard(party) {
-            const isConfirmed = currentUser && party.confirmed_users && party.confirmed_users[currentUser.id];
-            const isCreator = currentUser && party.created_by === currentUser.id;
-            
-            // Formatar data
-            const dateObj = new Date(party.date);
-            const formattedDate = dateObj.toLocaleDateString('pt-BR', { 
-                weekday: 'short', 
-                day: 'numeric', 
-                month: 'short' 
-            });
-            
-            // Lista de confirmados
-            let confirmedListHTML = '';
-            if (party.confirmed_users && Object.keys(party.confirmed_users).length > 0) {
-                for (const userId in party.confirmed_users) {
-                    const userName = party.confirmed_users[userId];
-                    const userColor = onlineUsers.get(userId)?.user_color || '#007aff';
-                    const firstChar = userName.charAt(0);
-                    const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
-                    
-                    confirmedListHTML += `
-                        <div class="confirmed-person">
-                            <div class="confirmed-avatar" style="background-color: ${userColor}">
-                                ${avatarChar}
-                            </div>
-                            <span>${userName}</span>
-                        </div>
-                    `;
-                }
+        // Carregar cores dos criadores das festas
+        loadCreatorColors();
+        
+        parties.forEach(party => {
+            // Contar confirmações
+            if (party.confirmed_users) {
+                totalConfirmations += Object.keys(party.confirmed_users).length;
             }
             
-            const partyCard = document.createElement('div');
-            partyCard.className = 'party-card';
-            partyCard.id = `party-${party.id}`;
+            // Criar card da festa
+            createPartyCard(party);
+        });
+        
+        updateCounters(parties.length, totalConfirmations);
+    }
+    
+    // Carregar cores dos criadores das festas
+    async function loadCreatorColors() {
+        try {
+            // Buscar todos os criadores únicos
+            const creatorIds = [...new Set(parties.map(p => p.created_by))];
             
-            partyCard.innerHTML = `
-                <div class="party-header">
-                    <div class="party-name">${escapeHtml(party.name)}</div>
-                    <div class="party-date"><i class="far fa-calendar"></i> ${formattedDate}</div>
-                </div>
+            // Buscar cores dos criadores online
+            const { data, error } = await supabase
+                .from('online_users')
+                .select('user_id, user_color')
+                .in('user_id', creatorIds);
+            
+            if (error) throw error;
+            
+            // Armazenar cores no cache
+            if (data) {
+                data.forEach(user => {
+                    userColorsCache.set(user.user_id, user.user_color || '#007aff');
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao carregar cores dos criadores:', error);
+        }
+    }
+    
+    // Função para obter a cor de um usuário
+    function getUserColor(userId) {
+        // Primeiro tenta do cache de cores
+        if (userColorsCache.has(userId)) {
+            return userColorsCache.get(userId);
+        }
+        
+        // Se não encontrar, tenta dos usuários online
+        const onlineUser = onlineUsers.get(userId);
+        if (onlineUser && onlineUser.user_color) {
+            userColorsCache.set(userId, onlineUser.user_color);
+            return onlineUser.user_color;
+        }
+        
+        // Se for o usuário atual
+        if (currentUser && userId === currentUser.id) {
+            return currentUser.color;
+        }
+        
+        // Cor padrão
+        return '#007aff';
+    }
+    
+    // Criar card de festa
+    function createPartyCard(party) {
+        const isConfirmed = currentUser && party.confirmed_users && party.confirmed_users[currentUser.id];
+        const isCreator = currentUser && party.created_by === currentUser.id;
+        
+        // Formatar data
+        const dateObj = new Date(party.date);
+        const formattedDate = dateObj.toLocaleDateString('pt-BR', { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'short' 
+        });
+        
+        // Lista de confirmados
+        let confirmedListHTML = '';
+        if (party.confirmed_users && Object.keys(party.confirmed_users).length > 0) {
+            for (const userId in party.confirmed_users) {
+                const userName = party.confirmed_users[userId];
+                const userColor = getUserColor(userId); // Usa a função para obter a cor correta
+                const firstChar = userName.charAt(0);
+                const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
                 
-                ${party.description ? `<div class="party-description">${escapeHtml(party.description)}</div>` : ''}
+                // Verificar se o usuário está online
+                const isOnline = onlineUsers.has(userId);
+                const onlineIndicator = isOnline ? ' style="box-shadow: 0 0 0 2px #34c759;"' : '';
                 
-                <div class="confirmation-section">
-                    <div class="confirmation-title">Confirmações</div>
-                    
-                    ${currentUser ? `
-                        <div class="confirmation-status ${isConfirmed ? 'confirmed' : ''}">
-                            <i class="fas fa-${isConfirmed ? 'check-circle' : 'clock'}"></i>
-                            ${isConfirmed ? 'Você confirmou presença' : 'Você não confirmou'}
+                confirmedListHTML += `
+                    <div class="confirmed-person">
+                        <div class="confirmed-avatar" style="background-color: ${userColor}"${onlineIndicator}>
+                            ${avatarChar}
                         </div>
+                        <span>${userName}${isOnline ? ' ✅' : ''}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        const partyCard = document.createElement('div');
+        partyCard.className = 'party-card';
+        partyCard.id = `party-${party.id}`;
+        
+        partyCard.innerHTML = `
+            <div class="party-header">
+                <div class="party-name">${escapeHtml(party.name)}</div>
+                <div class="party-date"><i class="far fa-calendar"></i> ${formattedDate}</div>
+            </div>
+            
+            ${party.description ? `<div class="party-description">${escapeHtml(party.description)}</div>` : ''}
+            
+            <div class="confirmation-section">
+                <div class="confirmation-title">Confirmações</div>
+                
+                ${currentUser ? `
+                    <div class="confirmation-status ${isConfirmed ? 'confirmed' : ''}">
+                        <i class="fas fa-${isConfirmed ? 'check-circle' : 'clock'}"></i>
+                        ${isConfirmed ? 'Você confirmou presença' : 'Você não confirmou'}
+                    </div>
+                ` : `
+                    <div class="confirmation-status">
+                        <i class="fas fa-users"></i>
+                        Entre com seu nome para confirmar presença
+                    </div>
+                `}
+                
+                ${currentUser ? `
+                    ${!isConfirmed ? `
+                        <button class="confirmation-btn confirm-btn" data-party-id="${party.id}">
+                            <i class="fas fa-check"></i> Confirmar presença
+                        </button>
                     ` : `
-                        <div class="confirmation-status">
-                            <i class="fas fa-users"></i>
-                            Entre com seu nome para confirmar presença
-                        </div>
-                    `}
-                    
-                    ${currentUser ? `
-                        ${!isConfirmed ? `
-                            <button class="confirmation-btn confirm-btn" data-party-id="${party.id}">
-                                <i class="fas fa-check"></i> Confirmar presença
-                            </button>
-                        ` : `
-                            <button class="confirmation-btn cancel-btn" data-party-id="${party.id}">
-                                <i class="fas fa-times"></i> Cancelar confirmação
-                            </button>
-                        `}
-                    ` : `
-                        <button class="confirmation-btn unavailable-btn" onclick="document.getElementById('loginModal').classList.add('active')">
-                            <i class="fas fa-sign-in-alt"></i> Entre para confirmar
+                        <button class="confirmation-btn cancel-btn" data-party-id="${party.id}">
+                            <i class="fas fa-times"></i> Cancelar confirmação
                         </button>
                     `}
-                    
-                    ${confirmedListHTML ? `
-                        <div class="confirmed-list">
-                            ${confirmedListHTML}
-                        </div>
-                    ` : ''}
-                </div>
+                ` : `
+                    <button class="confirmation-btn unavailable-btn" onclick="document.getElementById('loginModal').classList.add('active')">
+                        <i class="fas fa-sign-in-alt"></i> Entre para confirmar
+                    </button>
+                `}
                 
-                ${currentUser && isCreator ? `
-                    <div class="party-actions">
-                        <button class="delete-btn delete-party-btn" data-party-id="${party.id}">
-                            <i class="fas fa-trash"></i> Excluir festa
-                        </button>
+                ${confirmedListHTML ? `
+                    <div class="confirmed-list">
+                        ${confirmedListHTML}
                     </div>
                 ` : ''}
-            `;
+            </div>
             
-            partiesList.appendChild(partyCard);
-            
-            // Adicionar event listeners aos botões
-            const confirmBtn = partyCard.querySelector('.confirm-btn');
-            const cancelBtn = partyCard.querySelector('.cancel-btn');
-            const deleteBtn = partyCard.querySelector('.delete-party-btn');
-            
-            if (confirmBtn) {
-                confirmBtn.addEventListener('click', () => handleConfirmation(party.id, true));
-            }
-            
-            if (cancelBtn) {
-                cancelBtn.addEventListener('click', () => handleConfirmation(party.id, false));
-            }
-            
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', () => handleDeleteParty(party.id));
-            }
+            ${currentUser && isCreator ? `
+                <div class="party-actions">
+                    <button class="delete-btn delete-party-btn" data-party-id="${party.id}">
+                        <i class="fas fa-trash"></i> Excluir festa
+                    </button>
+                </div>
+            ` : ''}
+        `;
+        
+        partiesList.appendChild(partyCard);
+        
+        // Adicionar event listeners aos botões
+        const confirmBtn = partyCard.querySelector('.confirm-btn');
+        const cancelBtn = partyCard.querySelector('.cancel-btn');
+        const deleteBtn = partyCard.querySelector('.delete-party-btn');
+        
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => handleConfirmation(party.id, true));
         }
         
-        // Função para escapar HTML (segurança)
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => handleConfirmation(party.id, false));
         }
         
-        // Adicionar nova festa
-        async function handleAddParty() {
-            if (!currentUser) {
-                alert('Você precisa entrar com seu nome antes de criar uma festa!');
-                document.getElementById('loginModal').classList.add('active');
-                return;
-            }
-            
-            const partyName = document.getElementById('party-name').value.trim();
-            const partyDate = document.getElementById('party-date').value;
-            const partyDescription = document.getElementById('party-description').value.trim();
-            
-            if (!partyName) {
-                alert('Por favor, digite um nome para a festa!');
-                return;
-            }
-            
-            if (!partyDate) {
-                alert('Por favor, selecione uma data para a festa!');
-                return;
-            }
-            
-            try {
-                // Adicionar festa ao Supabase
-                const { error } = await supabase
-                    .from('parties')
-                    .insert({
-                        name: partyName,
-                        date: partyDate,
-                        description: partyDescription,
-                        created_by: currentUser.id,
-                        created_by_name: currentUser.name,
-                        confirmed_users: {}
-                    });
-                
-                if (error) throw error;
-                
-                // Limpar formulário
-                document.getElementById('party-name').value = '';
-                document.getElementById('party-description').value = '';
-                
-                // Focar no nome da festa
-                document.getElementById('party-name').focus();
-                
-            } catch (error) {
-                console.error('Erro ao criar festa:', error);
-                alert('Erro ao criar festa. Tente novamente.');
-            }
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => handleDeleteParty(party.id));
+        }
+    }
+    
+    // Função para escapar HTML (segurança)
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Adicionar nova festa
+    async function handleAddParty() {
+        if (!currentUser) {
+            alert('Você precisa entrar com seu nome antes de criar uma festa!');
+            document.getElementById('loginModal').classList.add('active');
+            return;
         }
         
-        // Lidar com confirmação/cancelamento
-        async function handleConfirmation(partyId, confirm) {
-            if (!currentUser) {
-                alert('Você precisa estar logado para confirmar presença!');
-                return;
-            }
-            
-            try {
-                // Primeiro, buscar a festa atual
-                const { data: party, error: fetchError } = await supabase
-                    .from('parties')
-                    .select('confirmed_users')
-                    .eq('id', partyId)
-                    .single();
-                
-                if (fetchError) throw fetchError;
-                
-                // Atualizar confirmações
-                const updatedConfirmations = { ...(party.confirmed_users || {}) };
-                
-                if (confirm) {
-                    updatedConfirmations[currentUser.id] = currentUser.name;
-                } else {
-                    delete updatedConfirmations[currentUser.id];
-                }
-                
-                // Atualizar no banco de dados
-                const { error: updateError } = await supabase
-                    .from('parties')
-                    .update({ confirmed_users: updatedConfirmations })
-                    .eq('id', partyId);
-                
-                if (updateError) throw updateError;
-                
-                // Atualizar display imediatamente
-                const partyIndex = parties.findIndex(p => p.id === partyId);
-                if (partyIndex !== -1) {
-                    parties[partyIndex].confirmed_users = updatedConfirmations;
-                    updatePartiesDisplay();
-                }
-                
-            } catch (error) {
-                console.error('Erro ao atualizar confirmação:', error);
-                alert('Erro ao atualizar. Tente novamente.');
-            }
+        const partyName = document.getElementById('party-name').value.trim();
+        const partyDate = document.getElementById('party-date').value;
+        const partyDescription = document.getElementById('party-description').value.trim();
+        
+        if (!partyName) {
+            alert('Por favor, digite um nome para a festa!');
+            return;
         }
         
-        // Excluir festa
-        async function handleDeleteParty(partyId) {
-            if (!confirm('Tem certeza que deseja excluir esta festa?')) return;
-            
-            try {
-                const { error } = await supabase
-                    .from('parties')
-                    .delete()
-                    .eq('id', partyId);
-                
-                if (error) throw error;
-                
-            } catch (error) {
-                console.error('Erro ao excluir festa:', error);
-                alert('Erro ao excluir festa. Tente novamente.');
-            }
+        if (!partyDate) {
+            alert('Por favor, selecione uma data para a festa!');
+            return;
         }
         
-        // Atualizar contadores
-        function updateCounters(totalParties, totalConfirmations) {
-            totalPartiesEl.textContent = totalParties;
-            totalConfirmationsEl.textContent = totalConfirmations;
+        try {
+            // Adicionar festa ao Supabase
+            const { error } = await supabase
+                .from('parties')
+                .insert({
+                    name: partyName,
+                    date: partyDate,
+                    description: partyDescription,
+                    created_by: currentUser.id,
+                    created_by_name: currentUser.name,
+                    confirmed_users: {}
+                });
+            
+            if (error) throw error;
+            
+            // Limpar formulário
+            document.getElementById('party-name').value = '';
+            document.getElementById('party-description').value = '';
+            
+            // Focar no nome da festa
+            document.getElementById('party-name').focus();
+            
+        } catch (error) {
+            console.error('Erro ao criar festa:', error);
+            alert('Erro ao criar festa. Tente novamente.');
         }
-    </script>
+    }
+    
+    // Lidar com confirmação/cancelamento
+    async function handleConfirmation(partyId, confirm) {
+        if (!currentUser) {
+            alert('Você precisa estar logado para confirmar presença!');
+            return;
+        }
+        
+        try {
+            // Primeiro, buscar a festa atual
+            const { data: party, error: fetchError } = await supabase
+                .from('parties')
+                .select('confirmed_users')
+                .eq('id', partyId)
+                .single();
+            
+            if (fetchError) throw fetchError;
+            
+            // Atualizar confirmações
+            const updatedConfirmations = { ...(party.confirmed_users || {}) };
+            
+            if (confirm) {
+                updatedConfirmations[currentUser.id] = currentUser.name;
+            } else {
+                delete updatedConfirmations[currentUser.id];
+            }
+            
+            // Atualizar no banco de dados
+            const { error: updateError } = await supabase
+                .from('parties')
+                .update({ confirmed_users: updatedConfirmations })
+                .eq('id', partyId);
+            
+            if (updateError) throw updateError;
+            
+            // Atualizar display imediatamente
+            const partyIndex = parties.findIndex(p => p.id === partyId);
+            if (partyIndex !== -1) {
+                parties[partyIndex].confirmed_users = updatedConfirmations;
+                updatePartiesDisplay();
+            }
+            
+        } catch (error) {
+            console.error('Erro ao atualizar confirmação:', error);
+            alert('Erro ao atualizar. Tente novamente.');
+        }
+    }
+    
+    // Excluir festa
+    async function handleDeleteParty(partyId) {
+        if (!confirm('Tem certeza que deseja excluir esta festa?')) return;
+        
+        try {
+            const { error } = await supabase
+                .from('parties')
+                .delete()
+                .eq('id', partyId);
+            
+            if (error) throw error;
+            
+        } catch (error) {
+            console.error('Erro ao excluir festa:', error);
+            alert('Erro ao excluir festa. Tente novamente.');
+        }
+    }
+    
+    // Atualizar contadores
+    function updateCounters(totalParties, totalConfirmations) {
+        totalPartiesEl.textContent = totalParties;
+        totalConfirmationsEl.textContent = totalConfirmations;
+    }
+</script>
 </body>
 </html>
-
-
