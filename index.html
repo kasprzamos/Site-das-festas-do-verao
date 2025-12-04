@@ -508,6 +508,19 @@
                 grid-template-columns: 1fr;
             }
         }
+		
+		/* Estilo para links na descrição */
+		.party-description a {
+			color: #007aff;
+			text-decoration: none;
+			border-bottom: 1px solid rgba(0, 122, 255, 0.3);
+			transition: all 0.2s;
+		}
+
+		.party-description a:hover {
+			color: #0056cc;
+			border-bottom-color: #0056cc;
+		}
         
         @media (max-width: 767px) {
             .container {
@@ -1110,7 +1123,7 @@
                     <div class="party-date"><i class="far fa-calendar"></i> ${formattedDate}</div>
                 </div>
                 
-                ${party.description ? `<div class="party-description">${escapeHtml(party.description)}</div>` : ''}
+                ${party.description ? `<div class="party-description">${formatTextWithLinks(party.description)}</div>` : ''}
                 
                 <div class="confirmation-section">
                     <div class="confirmation-title">Confirmações</div>
@@ -1179,12 +1192,45 @@
             }
         }
         
-        // Função para escapar HTML (segurança)
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        // Função para tornar URLs clicáveis e escapar HTML com segurança
+		function formatTextWithLinks(text) {
+			if (!text) return '';
+			
+			// Primeiro, escapar HTML básico para segurança
+			const div = document.createElement('div');
+			div.textContent = text;
+			let safeText = div.innerHTML;
+			
+			// Encontrar URLs e transformá-las em links clicáveis
+			// Regex para encontrar URLs (http, https, www)
+			const urlRegex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
+			
+			safeText = safeText.replace(urlRegex, function(url) {
+				// Adicionar http:// se começar com www
+				let linkUrl = url;
+				if (url.toLowerCase().startsWith('www.')) {
+					linkUrl = 'http://' + url;
+				}
+				
+				// Encurtar URLs muito longas para display
+				let displayUrl = url;
+				if (url.length > 50) {
+					displayUrl = url.substring(0, 47) + '...';
+				}
+				
+				return `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color: #007aff; text-decoration: none;">${displayUrl}</a>`;
+			});
+			
+			// Adicionar quebras de linha
+			safeText = safeText.replace(/\n/g, '<br>');
+			
+			return safeText;
+		}
+		function escapeHtml(text) {
+			const div = document.createElement('div');
+			div.textContent = text;
+			return div.innerHTML;
+		}
         
         // Adicionar nova festa
         async function handleAddParty() {
@@ -1309,4 +1355,3 @@
     </script>
 </body>
 </html>
-
