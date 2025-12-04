@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* TODO O CSS PERMANECE IGUAL - NÃO MUDAR */
         * {
             margin: 0;
             padding: 0;
@@ -23,7 +22,7 @@
         }
         
         .container {
-            max-width: 1000px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -183,11 +182,25 @@
             background-color: rgba(255, 59, 48, 0.05);
         }
         
-        /* Conteúdo principal */
-        .main-content {
+        /* Layout principal - GRID */
+        .main-layout {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr 2fr;
             gap: 30px;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .sidebar-section {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
         }
         
         .section-title {
@@ -205,14 +218,6 @@
         }
         
         /* Formulário de nova festa */
-        .party-form {
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-            margin-bottom: 10px;
-        }
-        
         .form-group {
             margin-bottom: 20px;
         }
@@ -271,11 +276,38 @@
             font-size: 16px;
         }
         
-        /* Grid de festas */
+        /* Amigos online */
+        .friends-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .friends-container::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .friends-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .friends-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        
+        /* Área principal - GRID DE FESTAS */
+        .main-area {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* GRID DE FESTAS - RESPONSIVO */
         .parties-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 20px;
+            flex: 1;
         }
         
         /* Card de festa */
@@ -284,18 +316,22 @@
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-            transition: transform 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
         
         .party-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
         
         .party-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             padding-bottom: 16px;
             border-bottom: 1px solid #f2f2f7;
         }
@@ -304,10 +340,11 @@
             font-size: 20px;
             font-weight: 600;
             color: #1d1d1f;
+            line-height: 1.3;
         }
         
         .party-date {
-            font-size: 14px;
+            font-size: 13px;
             color: #86868b;
             background-color: #f5f5f7;
             padding: 6px 12px;
@@ -315,17 +352,35 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         
         .party-description {
             color: #515154;
             margin-bottom: 20px;
             line-height: 1.5;
+            flex: 1;
+            word-break: break-word;
+        }
+        
+        /* Estilo para links na descrição */
+        .party-description a {
+            color: #007aff;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(0, 122, 255, 0.3);
+            transition: all 0.2s;
+            word-break: break-all;
+        }
+        
+        .party-description a:hover {
+            color: #0056cc;
+            border-bottom-color: #0056cc;
         }
         
         /* Status de confirmação */
         .confirmation-section {
-            margin-top: 24px;
+            margin-top: auto;
         }
         
         .confirmation-title {
@@ -343,7 +398,7 @@
             border-radius: 20px;
             font-size: 14px;
             font-weight: 500;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             background-color: #f5f5f7;
         }
         
@@ -392,7 +447,7 @@
         .confirmed-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             margin-top: 16px;
         }
         
@@ -401,14 +456,14 @@
             align-items: center;
             gap: 8px;
             background-color: #f5f5f7;
-            padding: 8px 12px;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 13px;
         }
         
         .confirmed-avatar {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             background-color: #007aff;
             color: white;
@@ -416,28 +471,12 @@
             align-items: center;
             justify-content: center;
             font-weight: 500;
-            font-size: 12px;
+            font-size: 11px;
+            flex-shrink: 0;
         }
         
         .confirmed-avatar.online {
             box-shadow: 0 0 0 2px #34c759;
-        }
-        
-        /* Estado vazio */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #86868b;
-        }
-        
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: #d2d2d7;
-        }
-        
-        .empty-state p {
-            font-size: 18px;
         }
         
         /* Ações da festa (apenas para criador) */
@@ -465,6 +504,78 @@
             background-color: rgba(255, 59, 48, 0.05);
         }
         
+        /* Amigos online */
+        .friends-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .friend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f5f5f7;
+            transition: all 0.2s;
+        }
+        
+        .friend-item:hover {
+            background-color: #e8e8ed;
+        }
+        
+        .friend-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #007aff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .friend-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .friend-name {
+            font-weight: 500;
+            font-size: 14px;
+            color: #1d1d1f;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .friend-status {
+            font-size: 11px;
+            color: #86868b;
+        }
+        
+        /* Estado vazio */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86868b;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #d2d2d7;
+        }
+        
+        .empty-state p {
+            font-size: 18px;
+        }
+        
         /* Rodapé */
         footer {
             text-align: center;
@@ -473,6 +584,7 @@
             font-size: 14px;
             margin-top: 40px;
             border-top: 1px solid #e5e5e7;
+            grid-column: 1 / -1;
         }
         
         .counter {
@@ -499,30 +611,25 @@
         }
         
         /* Responsivo */
-        @media (min-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr 2fr;
+        @media (max-width: 1100px) {
+            .main-layout {
+                grid-template-columns: 1fr;
             }
             
             .parties-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+            
+            .sidebar {
+                order: 2;
+            }
+            
+            .main-area {
+                order: 1;
             }
         }
-		
-		/* Estilo para links na descrição */
-		.party-description a {
-			color: #007aff;
-			text-decoration: none;
-			border-bottom: 1px solid rgba(0, 122, 255, 0.3);
-			transition: all 0.2s;
-		}
-
-		.party-description a:hover {
-			color: #0056cc;
-			border-bottom-color: #0056cc;
-		}
         
-        @media (max-width: 767px) {
+        @media (max-width: 768px) {
             .container {
                 padding: 16px;
             }
@@ -531,9 +638,14 @@
                 font-size: 28px;
             }
             
+            .parties-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .party-header {
                 flex-direction: column;
                 gap: 10px;
+                align-items: flex-start;
             }
             
             .party-date {
@@ -548,6 +660,20 @@
             
             .logout-btn {
                 align-self: flex-end;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .modal-content {
+                padding: 24px;
+            }
+            
+            .party-card {
+                padding: 20px;
+            }
+            
+            .sidebar-section {
+                padding: 20px;
             }
         }
     </style>
@@ -584,14 +710,15 @@
             <button class="logout-btn" id="logoutBtn">Sair</button>
         </div>
 
-        <main class="main-content">
-            <div>
-                <div class="section-title">
-                    <i class="fas fa-plus-circle"></i>
-                    Nova festa
-                </div>
-                
-                <div class="party-form" id="partyForm">
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">
+                        <i class="fas fa-plus-circle"></i>
+                        Nova festa
+                    </div>
+                    
                     <div class="form-group">
                         <label for="party-name">Nome da festa</label>
                         <input type="text" id="party-name" placeholder="Ex: Priv Mc Gorila, B1 Projota🍖, Baile da tuka 🏊‍♂️..." maxlength="50">
@@ -604,7 +731,7 @@
                     
                     <div class="form-group">
                         <label for="party-description">Descrição (opcional)</label>
-                        <textarea id="party-description" placeholder="Detalhes, local, horário..." maxlength="200"></textarea>
+                        <textarea id="party-description" placeholder="Detalhes, local, horário, links..." maxlength="300"></textarea>
                     </div>
                     
                     <button class="btn" id="add-party">
@@ -612,33 +739,40 @@
                     </button>
                 </div>
                 
-                <div class="party-form" style="margin-top: 20px;">
+                <div class="sidebar-section">
                     <div class="section-title" style="font-size: 18px; margin-bottom: 16px;">
                         <i class="fas fa-users"></i>
                         Amigos online
                     </div>
-                    <div id="friendsList">
-                        <p style="color: #86868b; font-style: italic;">Nenhum amigo online no momento</p>
+                    <div class="friends-container" id="friendsList">
+                        <div class="friends-list">
+                            <p style="color: #86868b; font-style: italic; text-align: center; padding: 20px;">
+                                Nenhum amigo online no momento
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div>
+            <!-- Área principal com GRID -->
+            <div class="main-area">
                 <div class="section-title">
                     <i class="fas fa-calendar-alt"></i>
                     Festas
+                    <span id="totalParties" style="font-size: 16px; color: #86868b; margin-left: 8px;">(0)</span>
                 </div>
                 
-                <div class="parties-grid" id="partiesList">
+                <!-- Grid de festas -->
+                <div class="parties-grid" id="partiesGrid">
                     <!-- Festas serão carregadas aqui -->
                 </div>
             </div>
-        </main>
+        </div>
         
         <footer>
             <div class="counter">
                 <div class="counter-item">
-                    <div class="counter-number" id="totalParties">0</div>
+                    <div class="counter-number" id="totalPartiesCounter">0</div>
                     <div class="counter-label">Festas</div>
                 </div>
                 <div class="counter-item">
@@ -646,7 +780,7 @@
                     <div class="counter-label">Confirmações</div>
                 </div>
             </div>
-            <p>Feito para organizar os melhores o verao dos desgraçados do grupo</p>
+            <p>Feito para organizar os melhores momentos do verão</p>
         </footer>
     </div>
 
@@ -668,7 +802,7 @@
         let currentUser = null;
         let parties = [];
         let onlineUsers = new Map();
-        let userColorsCache = new Map(); // Cache para armazenar cores dos usuários
+        let userColorsCache = new Map();
         
         // Cores para avatares
         const avatarColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa'];
@@ -681,10 +815,10 @@
         const logoutBtn = document.getElementById('logoutBtn');
         const userAvatar = document.getElementById('userAvatar');
         const displayName = document.getElementById('displayName');
-        const partyForm = document.getElementById('partyForm');
         const addPartyBtn = document.getElementById('add-party');
-        const partiesList = document.getElementById('partiesList');
+        const partiesGrid = document.getElementById('partiesGrid');
         const totalPartiesEl = document.getElementById('totalParties');
+        const totalPartiesCounter = document.getElementById('totalPartiesCounter');
         const totalConfirmationsEl = document.getElementById('totalConfirmations');
         const friendsList = document.getElementById('friendsList');
         
@@ -761,7 +895,6 @@
             } else {
                 loginModal.classList.add('active');
                 userStatus.style.display = 'none';
-                partyForm.style.display = 'block'; // Mostrar formulário mesmo sem login
             }
         }
         
@@ -851,8 +984,8 @@
                 // Atualizar UI
                 loginModal.classList.add('active');
                 userStatus.style.display = 'none';
-                partiesList.innerHTML = '';
-                friendsList.innerHTML = '<p style="color: #86868b; font-style: italic;">Nenhum amigo online no momento</p>';
+                partiesGrid.innerHTML = '';
+                friendsList.innerHTML = '<p style="color: #86868b; font-style: italic; text-align: center; padding: 20px;">Nenhum amigo online no momento</p>';
                 
                 // Recarregar festas (versão pública)
                 loadPartiesPublic();
@@ -936,31 +1069,40 @@
         // Atualizar lista de amigos
         function updateFriendsList() {
             if (!currentUser || onlineUsers.size === 0) {
-                friendsList.innerHTML = '<p style="color: #86868b; font-style: italic;">Nenhum amigo online no momento</p>';
+                friendsList.innerHTML = `
+                    <div class="friends-list">
+                        <p style="color: #86868b; font-style: italic; text-align: center; padding: 20px;">
+                            Nenhum amigo online no momento
+                        </p>
+                    </div>
+                `;
                 return;
             }
             
             let friendsHTML = '';
-            let count = 0;
             
             onlineUsers.forEach(user => {
-                if (count < 10) { // Limitar a 10 amigos na lista
-                    const firstChar = user.user_name.charAt(0);
-                    const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
-                    
-                    friendsHTML += `
-                        <div class="confirmed-person" style="margin-bottom: 8px;">
-                            <div class="confirmed-avatar" style="background-color: ${user.user_color || '#007aff'}">
-                                ${avatarChar}
-                            </div>
-                            <span>${user.user_name}</span>
+                const firstChar = user.user_name.charAt(0);
+                const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
+                
+                friendsHTML += `
+                    <div class="friend-item">
+                        <div class="friend-avatar" style="background-color: ${user.user_color || '#007aff'}">
+                            ${avatarChar}
                         </div>
-                    `;
-                    count++;
-                }
+                        <div class="friend-info">
+                            <div class="friend-name">${user.user_name}</div>
+                            <div class="friend-status">Online agora</div>
+                        </div>
+                    </div>
+                `;
             });
             
-            friendsList.innerHTML = friendsHTML;
+            friendsList.innerHTML = `
+                <div class="friends-list">
+                    ${friendsHTML}
+                </div>
+            `;
         }
         
         // Configurar inscrição em tempo real
@@ -995,10 +1137,10 @@
         function updatePartiesDisplay() {
             let totalConfirmations = 0;
             
-            partiesList.innerHTML = '';
+            partiesGrid.innerHTML = '';
             
             if (!parties || parties.length === 0) {
-                partiesList.innerHTML = `
+                partiesGrid.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-umbrella-beach"></i>
                         <p>Nenhuma festa criada ainda</p>
@@ -1078,28 +1220,69 @@
             return onlineUsers.has(userId);
         }
         
+        // Função para tornar URLs clicáveis e escapar HTML com segurança
+        function formatTextWithLinks(text) {
+            if (!text) return '';
+            
+            // Primeiro, escapar HTML básico para segurança
+            const div = document.createElement('div');
+            div.textContent = text;
+            let safeText = div.innerHTML;
+            
+            // Encontrar URLs e transformá-las em links clicáveis
+            const urlRegex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
+            
+            safeText = safeText.replace(urlRegex, function(url) {
+                // Adicionar http:// se começar com www
+                let linkUrl = url;
+                if (url.toLowerCase().startsWith('www.')) {
+                    linkUrl = 'http://' + url;
+                }
+                
+                // Encurtar URLs muito longas para display
+                let displayUrl = url;
+                if (url.length > 50) {
+                    displayUrl = url.substring(0, 47) + '...';
+                }
+                
+                return `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer">${displayUrl}</a>`;
+            });
+            
+            // Adicionar quebras de linha
+            safeText = safeText.replace(/\n/g, '<br>');
+            
+            return safeText;
+        }
+        
+        // Função para escapar HTML apenas (para nomes e outros campos)
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         // Criar card de festa
         function createPartyCard(party) {
             const isConfirmed = currentUser && party.confirmed_users && party.confirmed_users[currentUser.id];
             const isCreator = currentUser && party.created_by === currentUser.id;
             
-		// Formatar data - SOLUÇÃO RÁPIDA
-		let dateObj = new Date(party.date);
-		// Adicionar um dia para corrigir o fuso horário
-		dateObj.setDate(dateObj.getDate() + 1);
-		
-		const formattedDate = dateObj.toLocaleDateString('pt-BR', { 
-		    weekday: 'short', 
-		    day: 'numeric', 
-		    month: 'short' 
-		});
+            // Formatar data - CORREÇÃO DO FUSO HORÁRIO
+            let dateObj = new Date(party.date);
+            // Adicionar um dia para corrigir o fuso horário
+            dateObj.setDate(dateObj.getDate() + 1);
+            
+            const formattedDate = dateObj.toLocaleDateString('pt-BR', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short' 
+            });
             
             // Lista de confirmados
             let confirmedListHTML = '';
             if (party.confirmed_users && Object.keys(party.confirmed_users).length > 0) {
                 for (const userId in party.confirmed_users) {
                     const userName = party.confirmed_users[userId];
-                    const userColor = getUserColor(userId); // Usa a função para obter a cor correta
+                    const userColor = getUserColor(userId);
                     const firstChar = userName.charAt(0);
                     const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
                     const isOnline = isUserOnline(userId);
@@ -1175,7 +1358,7 @@
                 ` : ''}
             `;
             
-            partiesList.appendChild(partyCard);
+            partiesGrid.appendChild(partyCard);
             
             // Adicionar event listeners aos botões
             const confirmBtn = partyCard.querySelector('.confirm-btn');
@@ -1194,46 +1377,6 @@
                 deleteBtn.addEventListener('click', () => handleDeleteParty(party.id));
             }
         }
-        
-        // Função para tornar URLs clicáveis e escapar HTML com segurança
-		function formatTextWithLinks(text) {
-			if (!text) return '';
-			
-			// Primeiro, escapar HTML básico para segurança
-			const div = document.createElement('div');
-			div.textContent = text;
-			let safeText = div.innerHTML;
-			
-			// Encontrar URLs e transformá-las em links clicáveis
-			// Regex para encontrar URLs (http, https, www)
-			const urlRegex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])|(\bwww\.[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;
-			
-			safeText = safeText.replace(urlRegex, function(url) {
-				// Adicionar http:// se começar com www
-				let linkUrl = url;
-				if (url.toLowerCase().startsWith('www.')) {
-					linkUrl = 'http://' + url;
-				}
-				
-				// Encurtar URLs muito longas para display
-				let displayUrl = url;
-				if (url.length > 50) {
-					displayUrl = url.substring(0, 47) + '...';
-				}
-				
-				return `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" style="color: #007aff; text-decoration: none;">${displayUrl}</a>`;
-			});
-			
-			// Adicionar quebras de linha
-			safeText = safeText.replace(/\n/g, '<br>');
-			
-			return safeText;
-		}
-		function escapeHtml(text) {
-			const div = document.createElement('div');
-			div.textContent = text;
-			return div.innerHTML;
-		}
         
         // Adicionar nova festa
         async function handleAddParty() {
@@ -1352,10 +1495,10 @@
         
         // Atualizar contadores
         function updateCounters(totalParties, totalConfirmations) {
-            totalPartiesEl.textContent = totalParties;
+            totalPartiesEl.textContent = `(${totalParties})`;
+            totalPartiesCounter.textContent = totalParties;
             totalConfirmationsEl.textContent = totalConfirmations;
         }
     </script>
 </body>
 </html>
-
