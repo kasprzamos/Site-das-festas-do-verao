@@ -1083,13 +1083,16 @@
             const isConfirmed = currentUser && party.confirmed_users && party.confirmed_users[currentUser.id];
             const isCreator = currentUser && party.created_by === currentUser.id;
             
-            // Formatar data
-            const dateObj = new Date(party.date);
-            const formattedDate = dateObj.toLocaleDateString('pt-BR', { 
-                weekday: 'short', 
-                day: 'numeric', 
-                month: 'short' 
-            });
+		// Formatar data - SOLUÇÃO RÁPIDA
+		let dateObj = new Date(party.date);
+		// Adicionar um dia para corrigir o fuso horário
+		dateObj.setDate(dateObj.getDate() + 1);
+		
+		const formattedDate = dateObj.toLocaleDateString('pt-BR', { 
+		    weekday: 'short', 
+		    day: 'numeric', 
+		    month: 'short' 
+		});
             
             // Lista de confirmados
             let confirmedListHTML = '';
@@ -1355,3 +1358,4 @@
     </script>
 </body>
 </html>
+
