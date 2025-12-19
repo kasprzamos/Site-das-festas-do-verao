@@ -785,76 +785,83 @@
     </div>
 
     <script>
-        // ⭐⭐⭐ SUAS CREDENCIAIS DO SUPABASE ⭐⭐⭐
-        const SUPABASE_URL = 'https://betdkihrfsrzzcvojqce.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldGRraWhyZnNyenpjdm9qcWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3ODcxMjcsImV4cCI6MjA4MDM2MzEyN30.g_AV3sZN3zxW1RIug81X-7xJISSRoC3Dmv9zfNl71cY';
-        
-        // Inicializar Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    // ⭐⭐⭐ SUAS CREDENCIAIS DO SUPABASE ⭐⭐⭐
+    const SUPABASE_URL = 'https://betdkihrfsrzzcvojqce.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldGRraWhyZnNyenZjdm9qcWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3ODcxMjcsImV4cCI6MjA4MDM2MzEyN30.g_AV3sZN3zxW1RIug81X-7xJISSRoC3Dmv9zfNl71cY';
+    
+    // Inicializar Supabase - APENAS UMA VEZ
+    let supabase;
+    if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: {
                 autoRefreshToken: false,
                 persistSession: false,
                 detectSessionInUrl: false
             }
         });
+    } else {
+        console.error('Supabase library not loaded!');
+    }
+    
+    // Estado da aplicação
+    let currentUser = null;
+    let parties = [];
+    let onlineUsers = new Map();
+    let userColorsCache = new Map();
+    
+    // Cores para avatares
+    const avatarColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa'];
+    
+    // DOM elements
+    const loginModal = document.getElementById('loginModal');
+    const userStatus = document.getElementById('userStatus');
+    const userNameInput = document.getElementById('userName');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userAvatar = document.getElementById('userAvatar');
+    const displayName = document.getElementById('displayName');
+    const addPartyBtn = document.getElementById('add-party');
+    const partiesGrid = document.getElementById('partiesGrid');
+    const totalPartiesEl = document.getElementById('totalParties');
+    const totalPartiesCounter = document.getElementById('totalPartiesCounter');
+    const totalConfirmationsEl = document.getElementById('totalConfirmations');
+    const friendsList = document.getElementById('friendsList');
+    
+    // Inicializar aplicação
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Site iniciando...');
         
-        // Estado da aplicação
-        let currentUser = null;
-        let parties = [];
-        let onlineUsers = new Map();
-        let userColorsCache = new Map();
+        // Configurar data mínima como hoje
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('party-date').setAttribute('min', today);
+        document.getElementById('party-date').value = today;
         
-        // Cores para avatares
-        const avatarColors = ['#007aff', '#34c759', '#ff9500', '#ff3b30', '#af52de', '#5856d6', '#ff2d55', '#5ac8fa'];
+        // Carregar festas IMEDIATAMENTE (sem precisar de login)
+        loadPartiesPublic();
         
-        // DOM elements
-        const loginModal = document.getElementById('loginModal');
-        const userStatus = document.getElementById('userStatus');
-        const userNameInput = document.getElementById('userName');
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userAvatar = document.getElementById('userAvatar');
-        const displayName = document.getElementById('displayName');
-        const addPartyBtn = document.getElementById('add-party');
-        const partiesGrid = document.getElementById('partiesGrid');
-        const totalPartiesEl = document.getElementById('totalParties');
-        const totalPartiesCounter = document.getElementById('totalPartiesCounter');
-        const totalConfirmationsEl = document.getElementById('totalConfirmations');
-        const friendsList = document.getElementById('friendsList');
+        // Verificar se já está logado
+        checkExistingUser();
         
-        // Inicializar aplicação
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Site iniciando...');
-            
-            // Configurar data mínima como hoje
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('party-date').setAttribute('min', today);
-            document.getElementById('party-date').value = today;
-            
-            // Carregar festas IMEDIATAMENTE (sem precisar de login)
-            loadPartiesPublic();
-            
-            // Verificar se já está logado
-            checkExistingUser();
-            
-            // Event listeners
-            loginBtn.addEventListener('click', handleLogin);
-            logoutBtn.addEventListener('click', handleLogout);
-            addPartyBtn.addEventListener('click', handleAddParty);
-            
-            // Permitir login com Enter
-            userNameInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') handleLogin();
-            });
-            
-            // Observar mudanças nas festas em tempo real
-            setupRealtimeSubscription();
-            
-            // Manter usuário online
-            if (currentUser) {
-                setInterval(updateUserPresence, 30000);
-            }
+        // Event listeners
+        loginBtn.addEventListener('click', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        addPartyBtn.addEventListener('click', handleAddParty);
+        
+        // Permitir login com Enter
+        userNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleLogin();
         });
+        
+        // Observar mudanças nas festas em tempo real
+        setupRealtimeSubscription();
+        
+        // Manter usuário online
+        if (currentUser) {
+            setInterval(updateUserPresence, 30000);
+        }
+    });
+    
+    // Restante do código permanece igual...
         
         // Carregar festas PUBLICAMENTE (antes do login)
         async function loadPartiesPublic() {
