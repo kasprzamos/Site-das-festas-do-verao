@@ -1462,7 +1462,7 @@
                 }
                 
                 parties = data || [];
-                updatePartiesDisplay();
+                await updatePartiesDisplay();
             } catch (error) {
                 console.error('Erro:', error);
             }
@@ -1621,7 +1621,7 @@
             }
         }
         
-        // Carregar usuários online
+        // Carregar usuários online (otimizado)
         async function loadOnlineUsers() {
             if (!currentUser) return;
             
@@ -1638,62 +1638,66 @@
                 
                 // Atualizar mapa de usuários online
                 onlineUsers.clear();
-                userColorsCache.clear(); // Limpar cache
+                // NÃO limpar o cache de cores - manter as cores conhecidas
                 
                 if (data) {
                     data.forEach(user => {
                         if (user.user_id !== currentUser.id) {
                             onlineUsers.set(user.user_id, user);
-                            // Armazenar cor do usuário no cache
+                            // Atualizar cor do usuário no cache
                             userColorsCache.set(user.user_id, user.user_color || '#1CA9C9');
                         }
                     });
                 }
                 
                 updateFriendsList();
-                updatePartiesDisplay(); // Atualizar festas para mostrar cores corretas
+                // Atualizar apenas as cores dos avatares, não re-renderizar tudo
+                updateAvatarColors();
             } catch (error) {
                 console.error('Erro ao carregar usuários online:', error);
             }
         }
         
-        // Atualizar lista de amigos
+        // Atualizar lista de amigos (otimizado)
         function updateFriendsList() {
-            if (!currentUser || onlineUsers.size === 0) {
+            // Usar requestAnimationFrame para não bloquear a UI
+            requestAnimationFrame(() => {
+                if (!currentUser || onlineUsers.size === 0) {
+                    friendsList.innerHTML = `
+                        <div class="friends-list">
+                            <p style="color: var(--color-gray-500); font-style: italic; text-align: center; padding: var(--space-6);">
+                                Nenhum amigo online no momento
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let friendsHTML = '';
+                
+                onlineUsers.forEach(user => {
+                    const firstChar = user.user_name.charAt(0);
+                    const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
+                    
+                    friendsHTML += `
+                        <div class="friend-item">
+                            <div class="friend-avatar" style="background-color: ${user.user_color || '#1CA9C9'}">
+                                ${avatarChar}
+                            </div>
+                            <div class="friend-info">
+                                <div class="friend-name">${user.user_name}</div>
+                                <div class="friend-status">Online agora</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
                 friendsList.innerHTML = `
                     <div class="friends-list">
-                        <p style="color: var(--color-gray-500); font-style: italic; text-align: center; padding: var(--space-6);">
-                            Nenhum amigo online no momento
-                        </p>
-                    </div>
-                `;
-                return;
-            }
-            
-            let friendsHTML = '';
-            
-            onlineUsers.forEach(user => {
-                const firstChar = user.user_name.charAt(0);
-                const avatarChar = /[\uD800-\uDFFF]/.test(firstChar) ? '😎' : firstChar.toUpperCase();
-                
-                friendsHTML += `
-                    <div class="friend-item">
-                        <div class="friend-avatar" style="background-color: ${user.user_color || '#1CA9C9'}">
-                            ${avatarChar}
-                        </div>
-                        <div class="friend-info">
-                            <div class="friend-name">${user.user_name}</div>
-                            <div class="friend-status">Online agora</div>
-                        </div>
+                        ${friendsHTML}
                     </div>
                 `;
             });
-            
-            friendsList.innerHTML = `
-                <div class="friends-list">
-                    ${friendsHTML}
-                </div>
-            `;
         }
         
         // Configurar inscrição em tempo real
@@ -1725,7 +1729,7 @@
         }
         
         // Atualizar display das festas
-        function updatePartiesDisplay() {
+        async function updatePartiesDisplay() {
             let totalConfirmations = 0;
             
             partiesGrid.innerHTML = '';
@@ -1742,9 +1746,13 @@
                 return;
             }
             
-            // Carregar cores dos criadores das festas
-            loadCreatorColors();
+            // Carregar cores dos criadores das festas de forma não-bloqueante
+            loadCreatorColors().then(() => {
+                // Atualizar apenas os avatares após carregar as cores
+                updateAvatarColors();
+            });
             
+            // Renderizar cards imediatamente com cores padrão
             parties.forEach(party => {
                 // Contar confirmações
                 if (party.confirmed_users) {
@@ -1758,17 +1766,31 @@
             updateCounters(parties.length, totalConfirmations);
         }
         
-        // Carregar cores dos criadores das festas
+        // Carregar cores dos criadores das festas (otimizado)
         async function loadCreatorColors() {
             try {
-                // Buscar todos os criadores únicos
-                const creatorIds = [...new Set(parties.map(p => p.created_by))];
+                // Buscar todos os IDs únicos (criadores + confirmados)
+                const allUserIds = new Set();
                 
-                // Buscar cores dos criadores online
+                parties.forEach(party => {
+                    allUserIds.add(party.created_by);
+                    if (party.confirmed_users) {
+                        Object.keys(party.confirmed_users).forEach(userId => {
+                            allUserIds.add(userId);
+                        });
+                    }
+                });
+                
+                const userIdsArray = [...allUserIds];
+                
+                // Se não há usuários para buscar, retornar
+                if (userIdsArray.length === 0) return;
+                
+                // Buscar cores de todos os usuários de uma vez
                 const { data, error } = await supabase
                     .from('online_users')
                     .select('user_id, user_color')
-                    .in('user_id', creatorIds);
+                    .in('user_id', userIdsArray);
                 
                 if (error) throw error;
                 
@@ -1781,6 +1803,16 @@
             } catch (error) {
                 console.error('Erro ao carregar cores dos criadores:', error);
             }
+        }
+        
+        // Atualizar cores dos avatares após carregamento
+        function updateAvatarColors() {
+            document.querySelectorAll('.confirmed-avatar').forEach(avatar => {
+                const userId = avatar.dataset.userId;
+                if (userId && userColorsCache.has(userId)) {
+                    avatar.style.backgroundColor = userColorsCache.get(userId);
+                }
+            });
         }
         
         // Função para obter a cor de um usuário
@@ -1868,7 +1900,7 @@
                 month: 'short' 
             });
             
-            // Lista de confirmados
+            // Lista de confirmados (otimizado - usa cor padrão primeiro)
             let confirmedListHTML = '';
             if (party.confirmed_users && Object.keys(party.confirmed_users).length > 0) {
                 for (const userId in party.confirmed_users) {
@@ -1881,7 +1913,7 @@
                     
                     confirmedListHTML += `
                         <div class="confirmed-person">
-                            <div class="confirmed-avatar${onlineClass}" style="background-color: ${userColor}">
+                            <div class="confirmed-avatar${onlineClass}" data-user-id="${userId}" style="background-color: ${userColor}">
                                 ${avatarChar}
                             </div>
                             <span>${userName}${isOnline ? ' ✅' : ''}</span>
@@ -2062,7 +2094,7 @@
                 const partyIndex = parties.findIndex(p => p.id === partyId);
                 if (partyIndex !== -1) {
                     parties[partyIndex].confirmed_users = updatedConfirmations;
-                    updatePartiesDisplay();
+                    await updatePartiesDisplay();
                 }
                 
             } catch (error) {
