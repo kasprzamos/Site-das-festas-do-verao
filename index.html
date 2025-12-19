@@ -789,20 +789,18 @@
     const SUPABASE_URL = 'https://betdkihrfsrzzcvojqce.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJldGRraWhyZnNyenZjdm9qcWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3ODcxMjcsImV4cCI6MjA4MDM2MzEyN30.g_AV3sZN3zxW1RIug81X-7xJISSRoC3Dmv9zfNl71cY';
     
-    // Inicializar Supabase - APENAS UMA VEZ
-    let supabase;
-    if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-                detectSessionInUrl: false
-            }
-        });
-    } else {
-        console.error('Supabase library not loaded!');
-    }
-    
+	// Inicializar Supabase - APENAS UMA VEZ
+	if (window.supabase) {
+		supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+			auth: {
+				autoRefreshToken: false,
+				persistSession: false,
+				detectSessionInUrl: false
+			}
+		});
+	} else {
+		console.error('Supabase library not loaded!');
+	}
     // Estado da aplicação
     let currentUser = null;
     let parties = [];
